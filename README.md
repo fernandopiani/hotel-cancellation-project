@@ -4,7 +4,7 @@
 
 ### Introduction
 
-![image-2.png](attachment:image-2.png)
+![png](hotel-cancellations_files/hotel-cancellations_33_0.png)
 
 In this project, we will dive into the world of machine learning applications for revenue management and demand forecasting using a case study from the hospitality industry. Specifically, we will be analyzing a dataset containing information on hotel reservations with the ultimate goal of building a model to predict whether or not a booking will eventually be canceled.
 

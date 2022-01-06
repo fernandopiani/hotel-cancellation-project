@@ -1,4 +1,5 @@
-#### Fernando Piani
+### Fernando Piani  
+### January 5, 2022
 
 # Hotel Booking Cancellations - A Binary Classification Case Study
 
@@ -22,9 +23,11 @@ In statistical terms, our null hypothesis is that a reservation will not be canc
 
 In our case, making a Type I error would be significantly more costly than a Type II error. One of the main potential use cases for this model, as we described earlier, is helping hotels reach maximum capacity by continuing to advertise (or even potentially double book) rooms taken up by a reservation that our model predicts will be eventually canceled. With that being said, canceling our double-booking legitimate reservations can be extremely damaging to customer satisfaction and brand image.
 
-A type II error, or failing to detect a cancellation, does have the negative impact of potentially leading to empty rooms. However, in this case, there is no potential impact of ruining legitimate reservations. Additionally, given that reservations can, in many cases, be canceled with enough notice to advertise to and attract new guests, not all of them will lead to unfilled inventory and lost revenue. 
+A Type II error, or failing to detect a cancellation, does have the negative impact of potentially leading to empty rooms. However, in this case, there is no potential impact of ruining legitimate reservations. Additionally, given that reservations can, in many cases, be canceled with enough notice to advertise to and attract new guests, not all of them will lead to unfilled inventory and lost revenue. 
 
 Taking that into consideration, while the main goal will be to maximize our model's accuracy, we will also be more concerned with minimizing false positives than false negatives. In statistical terms, we will prioritize precision over recall.
+
+### Exploratory Data Analysis (Data Understanding)
 
 
 ```python
@@ -40,8 +43,6 @@ from scipy import stats
 ```python
 %matplotlib inline
 ```
-
-### Exploratory Data Analysis (Data Understanding)
 
 
 ```python
@@ -412,7 +413,7 @@ _ = sns.boxplot(x='is_canceled', y='lead_time', data=hotels)
     
 
 
-The data represtened by the boxplot above aligns with our intuition - bookings made far in advance are somewhat more prone to cancellations given that there is more time for plans to change.
+The data represented by the boxplot above aligns with our intuition - bookings made far in advance are somewhat more prone to cancellations given that there is more time for plans to change.
 
 #### Feature engineering  
 
@@ -542,88 +543,12 @@ Now, we'll run a quick test of our custom transformer using the data copy we cre
 cat_lim = CategoryLimiter(threshold = 0.95)
 
 # Fitting and transforming to a copy of the train set country column
-cat_lim.fit_transform(countries)
+test = cat_lim.fit_transform(countries)
 ```
 
 
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>country</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>105447</th>
-      <td>IRL</td>
-    </tr>
-    <tr>
-      <th>85242</th>
-      <td>FRA</td>
-    </tr>
-    <tr>
-      <th>65604</th>
-      <td>PRT</td>
-    </tr>
-    <tr>
-      <th>17345</th>
-      <td>GBR</td>
-    </tr>
-    <tr>
-      <th>117786</th>
-      <td>ESP</td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td>...</td>
-    </tr>
-    <tr>
-      <th>104906</th>
-      <td>Other</td>
-    </tr>
-    <tr>
-      <th>50818</th>
-      <td>RUS</td>
-    </tr>
-    <tr>
-      <th>36939</th>
-      <td>CN</td>
-    </tr>
-    <tr>
-      <th>14587</th>
-      <td>GBR</td>
-    </tr>
-    <tr>
-      <th>6068</th>
-      <td>GBR</td>
-    </tr>
-  </tbody>
-</table>
-<p>95512 rows × 1 columns</p>
-</div>
-
-
-
-
 ```python
-countries.value_counts().shape
+test.value_counts().shape
 ```
 
 
@@ -632,6 +557,8 @@ countries.value_counts().shape
     (24,)
 
 
+
+The above cell indicates that we have successfully limited the number of categories of the country feature from 177 to 24, thus making it much simpler computationally for our machine learning algorithms while preserving its most important values.
 
 #### Pipeline creation  
 
@@ -979,31 +906,7 @@ accuracy_score(hotel_test_labels, final_predictions)
 
 
 
-Lastly, let's build a 95% confidence interval for our model's accuracy score. We are dealing with a Binomial distribution (i.e. the probability of prediction successes), etcetc
-
-
-```python
-type(final_predictions)
-```
-
-
-
-
-    numpy.ndarray
-
-
-
-
-```python
-len(final_predictions)
-```
-
-
-
-
-    23878
-
-
+Lastly, let's build a 95% confidence interval for our model's accuracy score. In order to do so, we must note that we are dealing with a Binomial distribution, since we are examining the proportion of prediction successes - a yes or no question. We will utilize the *statsmodels* library, which containts the relevant *proportion_confint* function for this purpose.
 
 
 ```python

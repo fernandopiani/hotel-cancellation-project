@@ -21,7 +21,7 @@ In this project, we are a hotel attempting to predict whether a certain reservat
 
 In statistical terms, our null hypothesis is that a reservation will not be canceled, and the alternative is that it will be canceled. Making a Type I error in this situation would then be to incorrectly reject the null hypothesis, or incorrectly predict a cancellation where there will be none. A Type II error would be to fail in detecting a cancellation.
 
-In our case, making a Type I error would be significantly more costly than a Type II error. One of the main potential use cases for this model, as we described earlier, is helping hotels reach maximum capacity by continuing to advertise (or even potentially double book) rooms taken up by a reservation that our model predicts will be eventually canceled. With that being said, canceling our double-booking legitimate reservations can be extremely damaging to customer satisfaction and brand image.
+In our case, making a Type I error would be significantly more costly than a Type II error. One of the main potential use cases for this model, as we described earlier, is helping hotels reach maximum capacity by continuing to advertise (or even potentially double book) rooms taken up by a reservation that our model predicts will be eventually canceled. With that being said, canceling or double-booking legitimate reservations can be extremely damaging to customer satisfaction and brand image.
 
 A Type II error, or failing to detect a cancellation, does have the negative impact of potentially leading to empty rooms. However, in this case, there is no potential impact of ruining legitimate reservations. Additionally, given that reservations can, in many cases, be canceled with enough notice to advertise to and attract new guests, not all of them will lead to unfilled inventory and lost revenue. 
 
@@ -254,11 +254,11 @@ for col in missing_data_cols:
     ESP     8568
     DEU     7287
            ...  
-    KIR        1
-    ATF        1
-    SDN        1
-    NAM        1
-    MDG        1
+    AIA        1
+    SMR        1
+    PYF        1
+    BWA        1
+    FJI        1
     Name: country, Length: 177, dtype: int64
     9.0      31961
     240.0    13922
@@ -470,14 +470,20 @@ hotel_labels = train_set['is_canceled'].copy()
 
 We are now ready to begin preparing our data for the machine learning algorithms we will use to make predictions. We will follow industry best practices by creating functions and pipelines to automatically perform the necessary transformations, allowing for easier experimentation and (in many real-world cases) deployment.
 
-Our first step in this stage will be to distinguish numerical and categorical features in order to later apply the appropriate transformations to each. We will also drop the columns *company* since nearly 95% of its values are missing, and *agent* due to its large number of missing values and lack of interpretability (since it is an agent ID number).
+#### Data leakage prevention/Data treatments
+
+Our first step in this stage will be to distinguish numerical and categorical features in order to later apply the appropriate transformations to each. 
+
+Another crucial step will be to prevent data leakage, or the presence of any predictors that contain information about the target variable that will not be available when making real-world predictions. In our case, the dataset contains the columns *reservation_status* and *reservation_status_date*, both of which contain information on whether or not the reservation was canceled and when. Had we incorporated these variables into our pipelines, we would arrive at model showing near-perfect accuracy on our training and validation sets. However, its performance would be dismal when subsequently deployed on real-world data. Hence, we will drop them.
+
+Additionally, we will drop the columns *company*, since nearly 95% of its values are missing, and *agent* due to its large number of missing values and lack of interpretability (since it is an agent ID number).
 
 
 ```python
 # Storing categorical columns for future reference
 CAT_COLS = ['hotel', 'arrival_date_month', 'market_segment','distribution_channel', \
                     'is_repeated_guest', 'reserved_room_type', 'assigned_room_type', \
-                           'deposit_type', 'customer_type', 'reservation_status']
+                           'deposit_type', 'customer_type']
 
 # Storing numeric columns by creating a correlation matrix (which only uses numbers) and getting its index
 NUM_COLS = list(hotels.corr().index)
@@ -497,7 +503,7 @@ print(NUM_COLS)
 NUM_COLS.remove('is_repeated_guest')
 ```
 
-Notice that the *country* column is not included in the *CAT_COLS* list above. This is because we will treat it separately due to its high dimensionality. As it is a categorical variable with 177 unique values, we should not apply standard encoding techniques to *country*, as doing so will exponentially increase the size our dataset and thus computational complexity.  
+Notice that the *country* column is not included in the *CAT_COLS* list above. This is because we will treat it separately due to its high dimensionality. As it is a categorical variable with 177 unique values, we should not apply standard encoding techniques to *country*, as doing so will exponentially increase the size our dataset and thus computational complexity.
 
 Our goal here will be to reduce the number of categories of this feature in such a way as to preserve the most important instances. Additionally, we want to automate this process so that it can live within a Scikit-learn pipeline and transform unseen data. Because of Scikit-learn's object-oriented framework, we will need to create a new class to implement our transformer.
 
@@ -711,15 +717,15 @@ for model in models:
 	cv_classifier_accuracy(model, hotels_prepared, hotel_labels, 10)
 ```
 
-    Mean accuracy score computed using 10-fold cross-validation: 0.9775630389935228
-    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0018599190859892912
-    Computation time: 84.31540179252625
-    Mean accuracy score computed using 10-fold cross-validation: 0.9952780854943057
-    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0005856147940461956
-    Computation time: 122.26956820487976
-    Mean accuracy score computed using 10-fold cross-validation: 0.9951419653234238
-    Accuracy score std. deviation computed using 10-fold cross-validation: 0.000713532409350825
-    Computation time: 280.25656604766846
+    Mean accuracy score computed using 10-fold cross-validation: 0.8320106502656023
+    Accuracy score std. deviation computed using 10-fold cross-validation: 0.004593762927518514
+    Computation time: 121.28220319747925
+    Mean accuracy score computed using 10-fold cross-validation: 0.876423905071373
+    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0020976882459076422
+    Computation time: 131.39318990707397
+    Mean accuracy score computed using 10-fold cross-validation: 0.8300423719301495
+    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0038703244604302877
+    Computation time: 270.83328104019165
 
 
 
@@ -729,28 +735,26 @@ for model in models:
 	cv_classifier_stats(model, hotels_prepared, hotel_labels, 10)
 ```
 
-    Precision score computed using 10-fold cross-validation: 0.9871885077689827
-    Recall score computed using 10-fold cross-validation: 0.9517793041069561
-    Confusion matrix computed using 10-fold cross-validation: [[59696   437]
-     [ 1706 33673]]
-    Computation time: 84.57733583450317
-    Precision score computed using 10-fold cross-validation: 0.9997137786936859
-    Recall score computed using 10-fold cross-validation: 0.9872523248254614
-    Confusion matrix computed using 10-fold cross-validation: [[60123    10]
-     [  451 34928]]
-    Computation time: 122.53745317459106
-    Precision score computed using 10-fold cross-validation: 0.9989710463886586
-    Recall score computed using 10-fold cross-validation: 0.9879024279940077
-    Confusion matrix computed using 10-fold cross-validation: [[60097    36]
-     [  428 34951]]
-    Computation time: 274.1306641101837
+    Precision score computed using 10-fold cross-validation: 0.7873320651527761
+    Recall score computed using 10-fold cross-validation: 0.7487209926792731
+    Confusion matrix computed using 10-fold cross-validation: [[52978  7155]
+     [ 8890 26489]]
+    Computation time: 77.08177733421326
+    Precision score computed using 10-fold cross-validation: 0.8835745957224831
+    Recall score computed using 10-fold cross-validation: 0.7660193900336357
+    Confusion matrix computed using 10-fold cross-validation: [[56562  3571]
+     [ 8278 27101]]
+    Computation time: 124.6435489654541
+    Precision score computed using 10-fold cross-validation: 0.8307878369039392
+    Recall score computed using 10-fold cross-validation: 0.6795839339721303
+    Confusion matrix computed using 10-fold cross-validation: [[55236  4897]
+     [11336 24043]]
+    Computation time: 252.17010116577148
 
 
-Therefore, we can select the random forest algorithm from which we will build our model.  
+The data above shows that we can safely select the Random Forest algorithm from which to build our model. Not only did it provide the best overall accuracy score, but it also had the highest precision - the most important metric for our business case - and recall scores. Notably, its precision score of 88.3% represented relative improvements of 12% and 6% over those of the KNN and Gradient Boosting Classifier base models, respectively.
 
-Not only did it provide the best overall accuracy score, but it also had the highest precision score, which was the most important metric for our business case. While its training time was 40 seconds higher than that of the KNN algorithm, it did provide a 1.3% improvement in precision and 4% improvement in recall.
-
-We've seen the performance using the base parameters, but now let's see if we can optimize it even further and/or perhaps reduce its computation time.
+Now that we've analyzed our model's performance using Scikit-learn's default hyperparameters, we will attempt to optimize it even further and/or perhaps reduce computation time through hyperparameter tuning.
 
 #### Hyperparameter Tuning
 
@@ -810,12 +814,12 @@ for model in final_models:
 	cv_classifier_accuracy(model, hotels_prepared, hotel_labels, 10)
 ```
 
-    Mean accuracy score computed using 10-fold cross-validation: 0.99515244091185
-    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0005172933148631947
-    Computation time: 128.38732504844666
-    Mean accuracy score computed using 10-fold cross-validation: 0.9954456028353121
-    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0006491840375817313
-    Computation time: 246.49274826049805
+    Mean accuracy score computed using 10-fold cross-validation: 0.8770625980914939
+    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0031806719306567304
+    Computation time: 122.36625790596008
+    Mean accuracy score computed using 10-fold cross-validation: 0.8770730934100228
+    Accuracy score std. deviation computed using 10-fold cross-validation: 0.0026865862523991466
+    Computation time: 249.13652896881104
 
 
 
@@ -825,16 +829,16 @@ for model in final_models:
 	cv_classifier_stats(model, hotels_prepared, hotel_labels, 10)
 ```
 
-    Precision score computed using 10-fold cross-validation: 0.9996853456906662
-    Recall score computed using 10-fold cross-validation: 0.9878176319285452
-    Confusion matrix computed using 10-fold cross-validation: [[60122    11]
-     [  431 34948]]
-    Computation time: 122.77610993385315
-    Precision score computed using 10-fold cross-validation: 0.9997711670480549
-    Recall score computed using 10-fold cross-validation: 0.987930693349162
-    Confusion matrix computed using 10-fold cross-validation: [[60125     8]
-     [  427 34952]]
-    Computation time: 248.32206296920776
+    Precision score computed using 10-fold cross-validation: 0.8849127385418366
+    Recall score computed using 10-fold cross-validation: 0.7667542892676447
+    Confusion matrix computed using 10-fold cross-validation: [[56605  3528]
+     [ 8252 27127]]
+    Computation time: 138.8547399044037
+    Precision score computed using 10-fold cross-validation: 0.8858184422094196
+    Recall score computed using 10-fold cross-validation: 0.7692416405212131
+    Confusion matrix computed using 10-fold cross-validation: [[56625  3508]
+     [ 8164 27215]]
+    Computation time: 263.5939750671387
 
 
 As we can see above, the tweaked model generates a negligible improvement to accuracy, precision, and recall (small enough that it will most likely not generalize to new data), at the expense of a doubled computation time. For this reason, we will stick with the base random forest model.
@@ -860,8 +864,8 @@ confusion_matrix(hotel_test_labels, final_predictions)
 
 
 
-    array([[15030,     3],
-           [  108,  8737]])
+    array([[14169,   864],
+           [ 2079,  6766]])
 
 
 
@@ -873,7 +877,7 @@ precision_score(hotel_test_labels, final_predictions)
 
 
 
-    0.9996567505720824
+    0.8867627785058978
 
 
 
@@ -885,7 +889,7 @@ recall_score(hotel_test_labels, final_predictions)
 
 
 
-    0.9877897117015263
+    0.764951950254381
 
 
 
@@ -902,7 +906,7 @@ accuracy_score(hotel_test_labels, final_predictions)
 
 
 
-    0.9953513694614289
+    0.8767484713962643
 
 
 
@@ -928,7 +932,7 @@ conf_int = proportion_confint(count = n*p, nobs = n, alpha = (0.05))
 print(conf_int)
 ```
 
-    (0.9944885899134057, 0.996214149009452)
+    (0.8725789828717069, 0.8809179599208218)
 
 
 
@@ -938,11 +942,11 @@ margin_of_error = p - conf_int[0]
 print(margin_of_error)
 ```
 
-    0.0008627795480231626
+    0.004169488524557452
 
 
 ### Conclusion and Final Thoughts
 
-Now, thinking back to the original business problem - we wanted to maximize our overall accuracy in predicting cancellations while prioritizing our model's precision over recall. As we've mentioned above, in this situation, making a Type I error (i.e. incorrectly predicting a cancellation where there will be none) is significantly more costly than making a Type II error.
+Now, thinking back to the original business problem - we wanted to maximize our overall accuracy in predicting cancellations while prioritizing our model's precision over recall. As we've mentioned above, in this situation, making a Type I error (i.e. incorrectly predicting a cancellation where there will be none) is more costly than making a Type II error.
 
-We have arrived at a model with an overall accuracy score of 99.53%, and whose precision and recall scores are 99.96% and 98.77%, respectively. In other words - when our model flags a reservation as one that will be canceled we can expect it to be over 99% accurate. On the other hand, our model will fail to catch a slightly over 1% of all the reservations that will be eventually canceled. For the reasons outlined above, this is a more than satisfactory performance for our business case.
+We have arrived at a model with an overall accuracy score of 87.7%, and whose precision and recall scores are 88.7% and 76.5%, respectively. In other words - when our model flags a reservation as one that will be canceled we can expect it to be close to 90% accurate. Additionally, our model will only fail to catch fewer than a quarter of all the reservations that will be eventually canceled. For the reasons outlined above, this is a more than satisfactory performance for our business case.
